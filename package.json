@@ -1,0 +1,19 @@
+{
+  "name": "mobile-data-bar",
+  "productName": "流量监控",
+  "version": "0.1.1",
+  "description": "Windows 和 macOS 顶部流量余量浮窗",
+  "main": "src/main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "test:desktop": "electron scripts/smoke.cjs",
+    "package:mac": "electron-packager . '流量监控' --platform=darwin --arch=arm64 --app-bundle-id=local.databar.mobile --out=dist --overwrite --ignore='^/(dist|docs|scripts|test|work|\\.npm-cache|\\.git)'",
+    "package:win": "electron-packager . '流量监控' --platform=win32 --arch=x64 --out=dist --overwrite --ignore='^/(dist|docs|scripts|test|work|\\.npm-cache|\\.git)'"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "45.4.1"
+  }
+}

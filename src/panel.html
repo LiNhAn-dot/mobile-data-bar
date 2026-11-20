@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'">
+  <title>流量监控</title>
+  <link rel="stylesheet" href="panel.css">
+  <script src="panel.js" defer></script>
+</head>
+<body>
+  <main id="details" aria-label="流量详情">
+    <header>
+      <strong>中国移动</strong>
+      <span id="status" role="status">正在查询</span>
+    </header>
+    <div id="summary" hidden>
+      <div class="muted">剩余流量合计</div>
+      <strong id="detail-amount"></strong>
+    </div>
+    <dl id="categories" aria-label="剩余流量明细" hidden></dl>
+    <p id="guidance" class="muted" hidden></p>
+    <footer>
+      <time id="updated" class="muted"></time>
+      <div class="actions">
+        <button id="login" type="button">打开营业厅</button>
+        <button id="refresh" type="button">刷新</button>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

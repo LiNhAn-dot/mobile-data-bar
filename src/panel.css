@@ -1,0 +1,51 @@
+:root {
+  color-scheme: light dark;
+  --surface: light-dark(#fff, #172438);
+  --ink: light-dark(#172337, #eef4ff);
+  --muted: light-dark(#52637a, #adbed7);
+  --line: light-dark(#e3eaf3, #30425c);
+  --accent: light-dark(#145ead, #a9d2ff);
+  --action: light-dark(#edf4fc, #26374f);
+  --online: light-dark(#057450, #8ce0ba);
+  --warning: light-dark(#8d4f07, #fcca84);
+  font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  padding: 4px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  user-select: none;
+}
+
+button { font: inherit; cursor: pointer; }
+button:disabled { cursor: default; opacity: .6; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+#details {
+  width: 100%;
+  padding: 10px 11px 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#status { font-size: 11px; color: var(--muted); }
+#status[data-kind="ready"] { color: var(--online); }
+#status[data-kind="need-login"], #status[data-kind="unverified"], #status[data-kind="error"] { color: var(--warning); }
+#summary { margin: 8px 0 5px; }
+#detail-amount { display: block; font-size: 27px; font-weight: 620; line-height: 1.15; letter-spacing: -.035em; }
+#categories { margin: 0; padding-top: 3px; border-top: 1px solid var(--line); }
+#categories div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 2px 0; }
+#categories dd { margin: 0; white-space: nowrap; }
+.muted { font-size: 11px; color: var(--muted); }
+#guidance { margin: 7px 0 0; }
+footer { border-top: 1px solid var(--line); margin-top: 7px; padding-top: 6px; }
+time:empty { display: none; }
+.actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.actions button { border: 0; border-radius: 5px; background: var(--action); color: var(--accent); padding: 3px 6px; font-size: 11px; }
