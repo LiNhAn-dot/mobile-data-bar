@@ -133,7 +133,8 @@ async function run() {
 
   const openPortal = () => portal.show().catch(() => {});
   bind('bar:get-state', () => displayState(monitor.state));
-  bind('bar:refresh', () => monitor.refresh());
+  const refresh = () => monitor.refresh('manual');
+  bind('bar:refresh', refresh);
   bind('bar:open-portal', openPortal);
   bind('bar:resize', height => {
     if (!Number.isInteger(height) || height < 65 || height > 384) return;
@@ -144,7 +145,7 @@ async function run() {
 
   const menu = Menu.buildFromTemplate([
     { label: '打开中国移动营业厅', click: openPortal },
-    { label: '刷新余量', click: () => void monitor.refresh() },
+    { label: '刷新余量', click: refresh },
     { type: 'separator' },
     { label: '退出流量监控', role: 'quit' }
   ]);

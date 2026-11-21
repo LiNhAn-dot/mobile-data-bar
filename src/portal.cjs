@@ -163,7 +163,10 @@ function createPortal(onReturnToPortal) {
 
   async function query(mode) {
     const target = ensureWindow();
-    if (!target.webContents.getURL() || (mode !== 'current' && !target.isVisible())) {
+    const url = target.webContents.getURL();
+    const manual = mode === 'manual';
+    const reload = manual ? !isSignIn(url) : mode !== 'current' && !target.isVisible();
+    if (!url || reload) {
       await navigate(target);
     }
     const result = await scan(target);

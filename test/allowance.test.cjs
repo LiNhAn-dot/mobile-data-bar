@@ -39,6 +39,14 @@ test('uses a clearly labeled total alone with a flag for missing package detail'
   assert.deepEqual(summarizeAllowance({ totals: ['0MB'] }), { bytes: 0, categories: [], hasDetails: false });
 });
 
+test('a carrier package explicitly marked exhausted has zero remaining', () => {
+  const balance = summarizeAllowance({
+    tables: [[row('国内通用流量', '已用完'), row('定向流量', '0'), row('闲时流量', '无剩余流量')]]
+  });
+  assert.equal(formatAmount(balance.bytes), '0 MB');
+  assert.equal(balance.categories.length, 3);
+});
+
 test('unreadable rows and conflicting totals never appear as complete balances', () => {
   assert.equal(summarizeAllowance({ tables: [[row('通用流量', '1 GB'), row('定向流量', '--')]] }), null);
   assert.equal(summarizeAllowance({ tables: [[row('通用流量', '1 GB')]], totals: ['4 GB'] }), null);

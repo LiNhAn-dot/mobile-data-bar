@@ -16,16 +16,19 @@ async function testCarrierRedirect() {
   const fixture = fs.readFileSync(path.join(__dirname, '../test/fixtures/card-allowance.html'), 'utf8');
   const queryUrl = 'https://shop.10086.cn/i/?f=packremainqry&restored=1';
   let canRestore = true;
+  let unavailable = false;
+  let loginRequests = 0;
+  const html = body => new Response(body, { headers: { 'Content-Type': 'text/html;charset=utf-8' } });
   carrier.protocol.handle('https', request => {
     const url = new URL(request.url);
-    if (url.searchParams.has('restored')) {
-      return new Response(fixture, { headers: { 'Content-Type': 'text/html;charset=utf-8' } });
-    }
+    if (unavailable) return html('<main>查询暂不可用</main>');
+    if (url.searchParams.has('restored')) return html(fixture);
     if (url.hostname === 'shop.10086.cn') return Response.redirect('https://login.10086.cn/test');
+    loginRequests++;
     const page = canRestore
       ? `正在登录<script>setTimeout(() => location.replace(${JSON.stringify(queryUrl)}), 400)</script>`
       : '<main>扫码登录</main>';
-    return new Response(page, { headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+    return html(page);
   });
 
   let restoredNavigations = 0;
@@ -36,7 +39,21 @@ async function testCarrierRedirect() {
   assert.equal(restoredNavigations, 1);
   canRestore = false;
   assert.deepEqual(await portal.query(), { status: 'need-login' });
+  await portal.show();
+  const requestsBeforeRefresh = loginRequests;
+  assert.deepEqual(await portal.query('manual'), { status: 'need-login' });
+  assert.equal(loginRequests, requestsBeforeRefresh, 'Refreshing leaves verification in progress alone');
   portal.prepareToQuit();
+
+  const retry = createPortal(() => {});
+  unavailable = true;
+  await retry.show();
+  unavailable = false;
+  canRestore = true;
+  const refreshed = await retry.query('manual');
+  assert.equal(refreshed.status, 'ready', 'Manual refresh makes a new request even with the portal open');
+  assert.equal(formatAmount(refreshed.balance.bytes), '13.42 GB');
+  retry.prepareToQuit();
 }
 
 async function test() {
@@ -52,6 +69,20 @@ async function test() {
   assert.equal(cards.tables[0].length, 4);
   assert.equal(formatAmount(summarizeAllowance(cards).bytes), '13.42 GB');
   assert.equal(cards.queriedAt, '2026-11-20T12:00:00.000Z');
+  const withoutTimestamp = fs.readFileSync(path.join(__dirname, '../test/fixtures/card-allowance.html'), 'utf8')
+    .replace(/<p>查询时间：[^<]*<\/p>/, '');
+  await portal.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(withoutTimestamp)}`);
+  const undatedCards = await portal.webContents.executeJavaScript(`(${readVisibleAllowance})(document)`);
+  assert.equal(undatedCards.queriedAt, null);
+  assert.equal(formatAmount(summarizeAllowance(undatedCards)?.bytes ?? 0), '13.42 GB',
+    'A complete allowance section is readable without a carrier timestamp');
+  const exhausted = withoutTimestamp.replace(/剩余 [\d.]+ (?:GB|MB)/g, '已用完');
+  await portal.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(exhausted)}`);
+  const exhaustedCards = await portal.webContents.executeJavaScript(`(${readVisibleAllowance})(document)`);
+  assert.equal(summarizeAllowance(exhaustedCards)?.bytes, 0, 'Exhausted packages still report a balance');
+  await portal.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<p>剩余流量合计：0</p>'));
+  const unitlessZero = await portal.webContents.executeJavaScript(`(${readVisibleAllowance})(document)`);
+  assert.equal(summarizeAllowance(unitlessZero)?.bytes, 0, 'An explicitly labeled zero total needs no unit');
   portal.destroy();
 
   const icon = process.platform === 'win32' ? 'signal.ico' : 'signalTemplate.png';

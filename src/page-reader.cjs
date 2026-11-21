@@ -5,7 +5,8 @@ function readVisibleAllowance(document) {
     && document.defaultView.getComputedStyle(element).visibility === 'visible';
   const totals = new Set();
   const balanceLabels = /^(?:流量总剩余|剩余总流量|总剩余流量|全部流量剩余|流量剩余总量|总流量余量|剩余流量合计|流量剩余合计)$/;
-  const amountPattern = /^\d+(?:,\d{3})*(?:\.\d+)?\s*(?:TB|GB|MB|KB|B|T|G|M|K)$/i;
+  const amountPattern = /^(?:0+(?:\.0+)?|\d+(?:,\d{3})*(?:\.\d+)?\s*(?:TB|GB|MB|KB|B|T|G|M|K))$/i;
+  const exhaustedPattern = /(?:^|[\s%])((?:流量)?已(?:用完|用尽|耗尽)|无剩余流量)$/;
 
   for (const element of document.querySelectorAll('dt, label, p, div, span, strong, th')) {
     if (element.children.length > 3 || !visible(element)) continue;
@@ -14,7 +15,7 @@ function readVisibleAllowance(document) {
     const [caption, ...value] = label.split(':');
     if (!balanceLabels.test(caption.trim())) continue;
     const amount = value.join(':').trim() || (visible(element.nextElementSibling) ? text(element.nextElementSibling) : '');
-    if (amountPattern.test(amount)) totals.add(amount);
+    if (amountPattern.test(amount) || exhaustedPattern.exec(amount)?.[1] === amount) totals.add(amount);
   }
 
   const body = document.body?.innerText ?? '';
@@ -23,6 +24,10 @@ function readVisibleAllowance(document) {
     ? Date.parse(`${reportedTime[1]}-${reportedTime[2].padStart(2, '0')}-${reportedTime[3].padStart(2, '0')}T${reportedTime[4]}+08:00`)
     : NaN;
   const queriedAt = Number.isFinite(parsedTime) ? new Date(parsedTime).toISOString() : null;
+  const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]'))
+    .filter(visible).map(text);
+  const completeAllowanceSection = headings.includes('套餐余量查询') && headings.includes('套餐外计费信息');
+  const hasAllowanceCards = completeAllowanceSection || (queriedAt && /套餐余量查询/.test(body));
   const cards = [];
   const tables = [];
   for (const table of document.querySelectorAll('table, [role="table"], [role="grid"]')) {
@@ -30,11 +35,13 @@ function readVisibleAllowance(document) {
     const rows = Array.from(table.querySelectorAll('tr, [role="row"]'))
       .filter(row => visible(row) && row.closest('table, [role="table"], [role="grid"]') === table);
     // The personal center renders each allowance as a separate three-row table.
-    if (queriedAt && /套餐余量查询/.test(body) && rows.length === 3
+    if (hasAllowanceCards && rows.length === 3
       && rows.every(row => row.cells?.length === 1)) {
       const title = text(rows[0]);
       const name = text(rows[1]).split(/共\s*(?=\d)/)[0].trim();
-      const remaining = text(rows[2]).match(/剩余\s*:?\s*(.*)$/)?.[1];
+      const resource = text(rows[2]);
+      const remaining = resource.match(exhaustedPattern)?.[1]
+        ?? resource.match(/剩余(?:流量|量)?\s*:?\s*(.+)$/)?.[1];
       if (name.length <= 100 && /流量|上网/.test(name) && !/(?:通话时长|语音|短信|彩信)$/.test(name)) {
         cards.push({ name: `${title} ${name}`, remaining: remaining?.slice(0, 64) ?? '', unit: '' });
         continue;

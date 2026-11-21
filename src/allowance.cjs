@@ -3,6 +3,7 @@ const LABELS = { general: '通用流量', directed: '定向流量', other: '其�
 
 function parseAmount(value, unitHint = '') {
   const text = String(value ?? '').normalize('NFKC').trim();
+  if (/^(?:(?:流量)?已(?:用完|用尽|耗尽)|无剩余流量)$/.test(text)) return 0;
   const match = /^(\d+(?:,\d{3})*(?:\.\d+)?)\s*(TB|GB|MB|KB|B|T|G|M|K)?$/i.exec(text);
   if (!match) return null;
   const unit = (match[2] || unitHint).trim().toUpperCase();
